@@ -1,0 +1,2 @@
+wildfly_version: 11
+wildfly_destination: /opt/wildfly

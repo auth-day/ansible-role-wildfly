@@ -1,0 +1,36 @@
+- name: create group wildfly
+  group: name=wildfly state=present 
+
+- name: create user wildfly
+  user: name=wildfly group=wildfly shell=/usr/sbin/nologin
+
+- name: create wildfly dir 
+  file: path={{ wildfly_destination }} state=directory owner=wildfly group=wildfly mode=0755 
+
+- name: get wildfly {{ wildfly_version }} 
+  get_url: url=http://download.jboss.org/wildfly/{{ wildfly_version }}.0.0.Final/wildfly-{{ wildfly_version }}.0.0.Final.tar.gz dest=/opt/
+
+- name: unarchive wildfly 
+  unarchive: src=/opt/wildfly-{{ wildfly_version }}.0.0.Final.tar.gz dest={{ wildfly_destination }} copy=no
+
+- name: copy wildfly config to /etc/default/wildfly 
+  template: src=wildfly.j2 dest=/etc/default/wildfly
+
+- name: setup lauch.sh 
+  template: src=launch.sh.j2 dest={{ wildfly_destination }}/wildfly-{{ wildfly_version }}.0.0.Final/bin/launch.sh
+
+- name: make it executable 
+  file: path={{ wildfly_destination }}/wildfly-{{ wildfly_version }}.0.0.Final/bin/launch.sh mode="u+x"
+
+- name: copy systemd unit file
+  template: src=wildfly.service.j2 dest=/etc/systemd/system/wildfly.service 
+
+- name: give right permission 
+  file: path={{ wildfly_destination }} mode=0755 owner=wildfly group=wildfly recurse=yes
+
+- name: apply changes to systemd 
+  shell: "systemctl daemon-reload" 
+
+- name: start wildfly service 
+  service: name=wildfly state=restarted enabled=yes 
+
